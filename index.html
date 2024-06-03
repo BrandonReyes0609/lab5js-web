@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type="application/javascript">
+        // Cargar hoja de estilos de FontAwesome
+    const loadFontAwesome = () => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css';
+        document.head.appendChild(link);
+    };
+
+    // Crear y estilizar el contenedor principal
+    const createMainContainer = () => {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.height = '150vh';
+        document.body.appendChild(container);
+        return container;
+    };
+
+    // Crear y estilizar el botón de actualización
+    const createUpdateButton = (container) => {
+        const updateButton = document.createElement('button');
+        updateButton.style.fontSize = '30px';
+        updateButton.style.backgroundColor = 'green';
+        updateButton.style.color = 'white';
+
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-caret-left';
+        updateButton.appendChild(icon);
+
+        container.appendChild(updateButton);
+        return updateButton;
+    };
+
+    // Crear y estilizar el textarea para ingresar el usuario
+    const createUserTextArea = (container) => {
+        const textArea = document.createElement('textarea');
+        textArea.id = 'text';
+        textArea.rows = 2;
+        textArea.cols = 40;
+        textArea.style.fontSize = '20px';
+        textArea.placeholder = '';
+        container.appendChild(textArea);
+        return textArea;
+    };
+
+    // Función para mostrar elementos adicionales
+    const showAdditionalElements = () => {
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-atom';
+
+        const lightnightButton = document.createElement('button');
+        lightnightButton.style.fontSize = '40px';
+        lightnightButton.style.backgroundColor = 'white';
+        lightnightButton.style.border = 'none';
+        
+        const icon2 = document.createElement('i');
+        icon2.className = 'fas fa-dice-d20';
+        lightnightButton.appendChild(icon2);
+
+        const container = document.createElement('div');
+        container.className = 'contenedor';
+        container.style.width = '750px';
+        container.style.height = '400px';
+        container.style.backgroundColor = '#ffffff';
+        container.style.position = 'fixed';
+        container.style.top = '50%';
+        container.style.left = '50%';
+        container.style.transform = 'translate(-50%, -50%)';
+        container.style.borderColor = 'black';
+        container.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+        container.appendChild(lightnightButton);
+        document.body.appendChild(container);
+
+        const ulContainer = document.createElement('div');
+        ulContainer.style.overflowY = 'auto';
+        ulContainer.style.maxHeight = '350px';
+        container.appendChild(ulContainer);
+
+        const ul = document.createElement('ul');
+        ulContainer.appendChild(ul);
+
+        const textAreaContainer = document.createElement('div');
+        textAreaContainer.className = 'textAreacontainer';
+        textAreaContainer.style.display = 'flex';
+        textAreaContainer.style.marginTop = '10px';
+        container.appendChild(textAreaContainer);
+
+        const textArea = document.createElement('textarea');
+        textArea.id = 'text';
+        textArea.rows = 2;
+        textArea.cols = 85;
+        textArea.style.fontSize = '18px';
+        textArea.style.maxHeight = '100px';
+        textArea.placeholder = 'Escriba un mensaje';
+        textAreaContainer.appendChild(textArea);
+
+        const sendButton = document.createElement('button');
+        sendButton.append(icon);
+        sendButton.style.marginLeft = '10px';
+        sendButton.style.fontSize = '20px';
+        sendButton.style.color = 'red';
+        sendButton.style.backgroundColor = 'green';
+        textAreaContainer.appendChild(sendButton);
+
+        const wordCount = document.createElement('p');
+        wordCount.id = 'wordCount';
+        container.appendChild(wordCount);
+
+        const maxWords = 140;
+        let mensajesMostrados = [];
+
+        const countWords = (text) => text.length;
+
+        textArea.addEventListener('input', () => {
+            const count = countWords(textArea.value);
+            if (count > maxWords) {
+                const truncatedText = textArea.value.split(/\s+/).slice(0, maxWords).join(' ');
+                textArea.value = truncatedText;
+                wordCount.textContent = `${maxWords} NO se puede escribir más`;
+                sendButton.disabled = true;
+            } else {
+                sendButton.disabled = false;
+            }
+        });
+
+        const getMessages = async () => {
+            try {
+                const response = await fetch('https://chat.tiburoncin.lat/messages');
+                if (!response.ok) {
+                    throw new Error('No se pudo obtener los mensajes');
+                }
+                let messages = await response.json();
+                messages = messages.reverse();
+
+                const isScrolledToBottom = ulContainer.scrollHeight - ulContainer.clientHeight <= ulContainer.scrollTop + 1;
+                messages.forEach((element) => {
+                    if (!mensajesMostrados.includes(element.id)) {
+                        const li = document.createElement('li');
+                        li.style.display = 'table';
+                        li.style.verticalAlign = 'right';
+
+                        if (element.message.startsWith('https://') && (element.message.includes('png') || element.message.includes('jpg') || element.message.includes('gif') || element.message.includes('jpeg'))) {
+                            li.append(`${element.username}  : `);
+                            li.appendChild(document.createElement('br'));
+                            const img = document.createElement('img');
+                            img.src = element.message;
+                            img.style.maxWidth = '170px';
+                            img.onerror = () => {
+                                img.src = 'https://ruta/a/imagen_de_error.jpg';
+                                img.alt = 'Imagen no disponible';
+                            };
+                            li.appendChild(img);
+                        } else if (element.message.startsWith('https://')) {
+                            li.append(`${element.username}  : `);
+                            li.appendChild(document.createElement('br'));
+                            const linkElement = document.createElement("object");
+                            linkElement.width = "350";
+                            linkElement.height = "350";
+                            linkElement.data = `${element.message}`;
+                            linkElement.type = "text/html";
+                            linkElement.onerror = handlePreviewError;
+                            li.appendChild(linkElement);
+                            ul.insertBefore(li, ul.firstChild);
+                        } else {
+                            li.append(`${element.username}  :  ${element.message}\n`);
+                        }
+
+                        let darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true';
+                        if (darkModeEnabled) {
+                            li.style.backgroundColor = '#202c33';
+                            li.style.color = 'white';
+                        } else {
+                            li.style.backgroundColor = '##FF2D00';
+                            li.style.color = 'black';
+                        }
+                        li.style.listStyleType = 'none';
+                        li.style.marginBottom = '8px';
+                        li.style.height = 'fit-content';
+                        li.style.padding = '10px';
+                        ul.appendChild(li);
+
+                        mensajesMostrados.push(element.id);
+                    }
+                });
+
+                if (isScrolledToBottom) {
+                    ulContainer.scrollTop = ulContainer.scrollHeight;
+                }
+            } catch (error) {
+                console.error('Error al obtener los mensajes:', error);
+            }
+        };
+
+        const setMessages = async () => {
+            const body = {
+                username: localStorage.getItem('usuario'),
+                message: textArea.value
+            };
+            await fetch('https://chat.tiburoncin.lat/messages', {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
+            textArea.value = '';
+        };
+
+        sendButton.addEventListener('click', setMessages);
+
+        const enviarConEnter = (event) => {
+            if (event.keyCode === 13) {
+                event.preventDefault();
+                if (countWords(textArea.value) <= maxWords) {
+                    setMessages();
+                }
+            }
+        };
+
+        const applyDarkModeStyles = () => {
+            let darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true';
+            if (darkModeEnabled) {
+                document.body.style.backgroundColor = 'black';
+                icon.style.color = '#8696a0';
+                lightnightButton.style.backgroundColor = 'black';
+                icon2.style.color = '#8696a0';
+                textArea.style.backgroundColor = '#2a3942';
+                textArea.style.borderColor = '#8696a0';
+                textArea.style.color = 'white';
+                wordCount.style.color = 'white';
+                container.style.boxShadow = '0 0 10px rgba(241,241,241,255)';
+                container.style.borderColor = 'white';
+                container.style.backgroundColor = 'black';
+                const lis = document.querySelectorAll('li');
+                lis.forEach(li => {
+                    li.style.backgroundColor = '#202c33';
+                    li.style.color = 'white';
+                });
+                sendButton.style.backgroundColor = '#202c33';
+            } else {
+                document.body.style.backgroundColor = 'gray';
+                icon.style.color = 'gray';
+                icon2.style.color = 'black';
+                lightnightButton.style.backgroundColor = 'gray';
+                textArea.style.backgroundColor = 'gray';
+                textArea.style.borderColor = 'black';
+                textArea.style.color = 'black';
+                wordCount.style.color = 'black';
+                container.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+                container.style.borderColor = 'black';
+                container.style.backgroundColor = 'gray';
+                const lis = document.querySelectorAll('li');
+                lis.forEach(li => {
+                    li.style.backgroundColor = '##FF2D00';
+                    li.style.color = 'black';
+                });
+                sendButton.style.backgroundColor = 'green';
+            }
+        };
+
+        const toggleDarkMode = () => {
+            let darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true';
+            darkModeEnabled = !darkModeEnabled;
+            applyDarkModeStyles();
+            localStorage.setItem('darkModeEnabled', darkModeEnabled);
+        };
+
+        window.addEventListener('load', () => {
+            applyDarkModeStyles();
+            lightnightButton.addEventListener('click', toggleDarkMode);
+        });
+
+        textArea.addEventListener('keydown', enviarConEnter);
+        setInterval(getMessages, 1000);
+        getMessages();
+
+        const handlePreviewError = () => {};
+    };
+
+    // Inicializar componentes
+    loadFontAwesome();
+    const mainContainer = createMainContainer();
+    const updateButton = createUpdateButton(mainContainer);
+    const userTextArea = createUserTextArea(mainContainer);
+
+    let usuario = localStorage.getItem('usuario');
+    if (usuario != null) {
+        showAdditionalElements();
+    }
+
+    updateButton.addEventListener('click', () => {
+        usuario = userTextArea.value;
+        localStorage.setItem('usuario', usuario);
+        location.reload();
+    });
+</script>
+  </body>
+</html>
